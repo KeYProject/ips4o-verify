@@ -8,6 +8,10 @@ de.wiesler.Functions[de.wiesler.Functions::fill([I,int,int,int)].JML normal_beha
 de.wiesler.Buffers[de.wiesler.Buffers::align_to_next_block(int)].JML normal_behavior operation contract.0
 de.wiesler.Buffers[de.wiesler.Buffers::blockAligned(int)].JML model_behavior operation contract.0
 
+de.wiesler.Tree[de.wiesler.Tree::piInRangeUpper(int,int)].JML model_behavior operation contract.0
+de.wiesler.Tree[de.wiesler.Tree::piInRangeLower(int,int)].JML model_behavior operation contract.0
+de.wiesler.Tree[de.wiesler.Tree::piLemmaUpperBound(int)].JML model_behavior operation contract.0
+
 # constructors here just to be safe that they don't use contracts proven in the final heap
 de.wiesler.Tree[de.wiesler.Tree::Tree([I,[I,int)].JML normal_behavior operation contract.0
 de.wiesler.Tree[de.wiesler.Tree::build(int,[I,int,int)].JML normal_behavior operation contract.0
