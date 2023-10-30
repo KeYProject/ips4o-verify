@@ -7,11 +7,23 @@ plugins {
     `maven-publish`
     id("io.github.gradle-nexus.publish-plugin") version "1.0.0"
     idea
-    id("com.diffplug.spotless") version "6.20.0"
 }
 
 group = "org.key-project.ips4o"
 version = "1.0"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
 
 // configure all java components to be published
 publishing {
