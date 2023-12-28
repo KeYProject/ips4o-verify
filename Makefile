@@ -13,20 +13,23 @@ default:
 proofSettings:
 	mkdir -p $${HOME}/.key
 	cp proofIndependentSettings.props $${HOME}/.key
+	touch $${HOME}/.key/proof-settings.props
 
-overflow-run:
+overflow-run: proofSettings
 	@echo Consider loading one of the following files:
 	@find -iname "project*.key"
 	java -Dkey.contractOrder="contract-order.txt" -jar $(KEY_OVERFLOW_JAR)
 
-run:
+run: proofSettings
 	@echo Consider loading one of the following files:
 	@find -iname "project*.key"
 	java -Dkey.contractOrder="contract-order.txt" -jar $(KEY_JAR)
 
 compile:
-	find -name "*.java" > sources.txt
-	javac @sources.txt
+	./gradlew compileJava
+
+test:
+	./gradlew test
 
 constr-src:
 	rm -rf src/main/java-constr
@@ -45,11 +48,11 @@ check: check-methods check-constructors check-overflow-methods check-overflow-co
 check-methods: proofSettings
 	$(checkCommand) --forbid-contracts-file "contracts/ignore.txt" --forbid-contracts-file "contracts/constructors.txt" -s statistics-methods.json src/main/key/project.key
 
-check-constructors: constr-src
+check-constructors: constr-src proofSettings
 	$(checkCommand) --contracts-file contracts/constructors.txt -s statistics-constructors.json  src/main/key/project-constr.key
 
-check-overflow-methods:
+check-overflow-methods: proofSettings
 	$(checkOverflowCommand) --contracts-file "contracts/overflow.txt" --forbid-contracts-file "contracts/constructors.txt" -s statistics-overflow-methods.json  src/main/key-overflow/project.key
 
-check-overflow-constructors: constr-overflow-src
+check-overflow-constructors: constr-overflow-src proofSettings
 	$(checkOverflowCommand) --contracts-file "contracts/constructors.txt" -s statistics-overflow-constructors.json  src/main/key-overflow/project-constr.key
