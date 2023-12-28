@@ -25,11 +25,11 @@ public final class Tree {
       @ requires_free (1 << log_buckets) <= tree.length;
       @ requires_free \disjoint(sorted_splitters[*], tree[*]);
       @
-      @ ensures_free this.log_buckets == log_buckets;
-      @ ensures_free this.tree == tree;
-      @ ensures_free this.sorted_splitters == sorted_splitters;
+      @ ensures this.log_buckets == log_buckets;
+      @ ensures this.tree == tree;
+      @ ensures this.sorted_splitters == sorted_splitters;
       @
-      @ assignable_free tree[*];
+      @ assignable tree[*];
       @*/
     public Tree(int[] sorted_splitters, int[] tree, int log_buckets) {
         //@ set num_buckets = 1 << log_buckets;
@@ -37,7 +37,7 @@ public final class Tree {
         final int num_buckets = 1 << log_buckets;
         final int num_splitters = num_buckets - 1;
 
-        //@ assume 2 <= num_buckets <= tree.length;
+        //@ assert 2 <= num_buckets <= tree.length;
 
         this.log_buckets = log_buckets;
         this.tree = tree;
@@ -280,9 +280,9 @@ public final class Tree {
 
     /*@ normal_behaviour
       @ requires_free \dl_inInt(value);
-      @ ensures_free this.num_buckets <= \result < 2 * this.num_buckets;
+      @ ensures this.num_buckets <= \result < 2 * this.num_buckets;
       @
-      @ ensures_free this.isClassifiedAs(value, \result - this.num_buckets);
+      @ ensures this.isClassifiedAs(value, \result - this.num_buckets);
       @
       @ // Needed to bring this method to logic
       @ ensures_free \result == this.classify(value);
@@ -336,11 +336,11 @@ public final class Tree {
       @ requires_free indices.length == end - begin;
       @ requires_free \disjoint(values[*], indices[*], this.tree[*], this.sorted_splitters[*]);
       @
-      @ ensures_free (\forall int i; 0 <= i < indices.length; this.num_buckets <= indices[i] < 2 * this.num_buckets);
+      @ ensures (\forall int i; 0 <= i < indices.length; this.num_buckets <= indices[i] < 2 * this.num_buckets);
       @ // Needed to bring this method to logic
-      @ ensures_free (\forall int i; 0 <= i < indices.length; indices[i] == this.classify(values[begin + i]));
+      @ ensures (\forall int i; 0 <= i < indices.length; indices[i] == this.classify(values[begin + i]));
       @
-      @ assignable_free indices[*];
+      @ assignable indices[*];
       @*/
     void classify_all(int[] values, int begin, int end, int[] indices) {
         Functions.fill(indices, 0, indices.length, 1);
