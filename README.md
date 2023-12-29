@@ -110,13 +110,12 @@ You find the respective KeY binaries in the directory
 [`tools`](tools). The [`Makefile`](Makefile) gives you hints on how to
 execute the checker.
 
-The proofs are located in [`proofs`](proofs) and can be loaded using
+The sources and proofs are located in [`src`](src) and can be loaded using
 the KeY binaries in [`tools`](tools).
 
 The [`contracts`](contracts) folder contains listing of subsets of all
 contracts used for filtering.  The proof statistics can be found in
 [`statistics`](statistics).
-
 
 Make sure to pass `-Dkey.contractOrder="<path to contract-order.txt>"`
 to java such that the contract order file is loaded.
@@ -130,6 +129,11 @@ to java such that the contract order file is loaded.
   they have been shown in the original proof obligations.  They have
   to be loaded using the second KeY binary
   [`key-2.11.0-o-exe.jar`](tools/key-2.11.0-o-exe.jar).
+  
+* The functional proofs of the methods `Tree::classify`,
+  `Tree::classify_all` as well as `Tree::build` were mostly done
+  together with their overflow checks, so that they are also to be
+  found in the overflow directory.
 
 * To run proofs in
   [`contracts/constructors.txt`](contracts/constructors.txt) the
@@ -140,11 +144,12 @@ to java such that the contract order file is loaded.
   this in KeY automatically. The Makefile takes care of this
   adaptation.
 
-* The methods `Tree::classify`, `Tree::classify_all` as well as `Tree::build` were left out as future work.
-
 * To run the code use the `bench` branch which has the proper fallback sorting algorithm not commented out.
 
-* The sampling function `Functions::select_n` is left empty and should probably be implemented.
+* The sampling function `Functions::select_n` may permute elements
+  within the input array for a better sample distribution. It
+  currently does not do anything (which is also a form of permutation
+  ...), but the algorithm might be improved by adding randomness here.
 
 ## Publications
 
@@ -156,4 +161,4 @@ Transaction on Parallel Computing 9(1), 2:1– 2:62 (2022), see also
 ESA 2017
 
 2. B. Beckert, P. Sanders, M. Ulbrich, J. Wiesler, and S. Witt:
-   *Formally Verifying an Efficient Sorter*. arxiv
+   *Formally Verifying an Efficient Sorter*. TACAS 24.
