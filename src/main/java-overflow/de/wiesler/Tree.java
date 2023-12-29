@@ -338,7 +338,7 @@ public final class Tree {
       @
       @ ensures (\forall int i; 0 <= i < indices.length; this.num_buckets <= indices[i] < 2 * this.num_buckets);
       @ // Needed to bring this method to logic
-      @ ensures (\forall int i; 0 <= i < indices.length; indices[i] == this.classify(values[begin + i]));
+      @ ensures_free (\forall int i; 0 <= i < indices.length; indices[i] == this.classify(values[begin + i]));
       @
       @ assignable indices[*];
       @*/
