@@ -24,8 +24,8 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                # target: [ check-overflow-methods, check-overflow-constructors, check-methods, check-constructors ]
-                target: [ check-overflow-methods, check-methods, check-constructors ]
+                target: [ check-overflow-methods, check-overflow-constructors, check-methods, check-constructors ]
+                # target: [ check-overflow-methods, check-methods, check-constructors ]
 
         runs-on: ubuntu-latest
         env:

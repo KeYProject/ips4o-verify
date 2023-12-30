@@ -41,10 +41,10 @@ de.wiesler.Tree[de.wiesler.Tree::binarySearchInvariant(int,int,int)].JML model_b
 de.wiesler.Tree[de.wiesler.Tree::binarySearchInvariant(int,int,int)].JML accessible clause.0
 
 de.wiesler.Tree[de.wiesler.Tree::piOf1(int)].JML model_behavior operation contract.0
-de.wiesler.Tree[de.wiesler.Tree::piLemmaLeft(int, int)].JML model_behavior operation contract.0
-de.wiesler.Tree[de.wiesler.Tree::piLemmaRight(int, int)].JML model_behavior operation contract.0
+de.wiesler.Tree[de.wiesler.Tree::piLemmaLeft(int,int)].JML model_behavior operation contract.0
+de.wiesler.Tree[de.wiesler.Tree::piLemmaRight(int,int)].JML model_behavior operation contract.0
 
-de.wiesler.Tree[de.wiesler.Tree::piLemma(int, int)].JML model_behavior operation contract.0
+de.wiesler.Tree[de.wiesler.Tree::piLemma(int,int)].JML model_behavior operation contract.0
 
 de.wiesler.Tree[de.wiesler.Tree::treeSearchInvariantLemmaImpl(int,int,int,int,int)].JML normal_behavior operation contract.0
 
