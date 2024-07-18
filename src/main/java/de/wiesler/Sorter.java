@@ -570,7 +570,7 @@ public final class Sorter {
 
     /*@ model_behaviour
       @   requires 0 <= idx < seq.length;
-      @   ensures (\forall int x; 0 <= x < seq.length; 
+      @   ensures (\forall int x; 0 <= x < seq.length;
       @              \result[x] == (x == idx ? value : seq[x]));
       @   ensures \result.length == seq.length;
       @ static no_state model \seq seqUpd(\seq seq, int idx, int value) {
@@ -594,7 +594,7 @@ public final class Sorter {
         if (end - begin < 2) return;
         int k = begin + 1;
 
-        /*@ loop_invariant \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), 
+        /*@ loop_invariant \dl_seqPerm(\dl_seq_def_workaround(begin, end, values),
           @                       \old(\dl_seq_def_workaround(begin, end, values)));
           @ loop_invariant begin < k <= end;
           @ loop_invariant (\forall int x; k <= x < end; values[x] == \old(values[x]));
@@ -611,7 +611,7 @@ public final class Sorter {
               @ loop_invariant i == k - 1 || Functions.isSortedSlice(values, begin, k+1);
               @ loop_invariant Functions.isSortedSlice(values, begin, k);
               @ loop_invariant \dl_seqPerm(
-              @    seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value), 
+              @    seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value),
               @    \old(\dl_seq_def_workaround(begin, end, values)));
               @ loop_invariant value <= values[hole];
               @ assignable values[begin..k];
@@ -672,7 +672,24 @@ public final class Sorter {
       @*/
     public static void sort(int[] values) {
         Storage storage = new Storage();
-        //@ assert \disjoint(storage.allArrays, values);
+        /*@ assert \disjoint(storage.allArrays, values[*]) \by {
+                oss;
+                rule disjointToElementOf;
+                auto;
+            }; @*/
         sort(values, 0, values.length, storage);
+        /*@ assert \dl_seqPerm(\dl_array2seq(values), \old(\dl_array2seq(values))) \by {
+                oss;
+                assert "seqDef{int u;}(0, values.length, any::select(heap, values, arr(u))) = seqDef{int j;}(0, values.length, any::select(heapAfter_Storage, values, arr(j)))" \by {
+                    auto;
+                }
+                auto;
+            } @*/
+        /*@ assert \dl_assignable(\old(\dl_heap()), values[*]) \by {
+                oss;
+                rule assignableDefinition;
+                macro "simp-heap";
+                auto;
+            } @*/
     }
 }
