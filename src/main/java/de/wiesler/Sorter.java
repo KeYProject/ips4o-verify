@@ -21,28 +21,44 @@ public final class Sorter {
       @*/
     private static SampleParameters sample(int[] values, int begin, int end, Storage storage) {
         SampleParameters parameters = new SampleParameters(end - begin);
-        /*@ normal_behaviour
-          @ ensures \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values)));
-          @ measured_by end - begin, 0;
-          @ assignable \strictly_nothing;
+        /*@ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+                oss;
+                assert "seqDef{int j;}(begin, end, any::select(heap, values, arr(j))) = seqDef{int j;}(begin, end, any::select(heapAfter_SampleParameters, values, arr(j)))" \by {
+                    auto;
+                }
+                auto;
+            }
           @*/
-        {;;}
 
         Functions.select_n(values, begin, end, parameters.num_samples);
-        /*@ normal_behaviour
-          @ ensures \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values)));
-          @ measured_by end - begin, 0;
-          @ assignable \strictly_nothing;
+        /*@ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+                auto;
+            };
           @*/
-        {;;}
+
         //@ ghost \seq before_sort = \dl_seq_def_workaround(begin, end, values);
         sort(values, begin, begin + parameters.num_samples, storage);
-        /*@ normal_behaviour
-          @ ensures \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), before_sort);
-          @ measured_by end - begin, 0;
-          @ assignable \strictly_nothing;
+        /*@ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), before_sort) \by {
+                oss;
+                assert "wellFormed(heapAfter_sort)" \by { auto; }                   // this is missing in the original proof by JW, but somehow needed here (automode does not find it)
+
+                // let @intfinal_0="int::final(self, de.wiesler.SampleParameters::$num_samples)"; // does not work, seems that @ sign is removed too early
+
+                assert "seqPerm(seqDef{int j;}(add(begin, int::final(self_25, de.wiesler.SampleParameters::$num_samples)), end, int::select(heapAfter_sort, values, arr(j))),
+                                seqDef{int j;}(add(begin, int::final(self_25, de.wiesler.SampleParameters::$num_samples)), end, any::select(heapAfter_select_n, values, arr(j))))" \by {
+                    assert "seqDef{int j;}(begin + int::final(self_25, de.wiesler.SampleParameters::$num_samples), end, any::select(heapAfter_select_n, values, arr(j)))
+                          = seqDef{int j;}(begin + int::final(self_25, de.wiesler.SampleParameters::$num_samples), end, values[j]@heapAfter_sort)" \by {
+                        auto;
+                    }
+                    auto;
+                }
+
+                //rule seqPermConcatFW on="seqPerm(seqDef{int j;}(begin, add(int::_, int::_)), seqDef{int j;}(begin, add(int::_, int::_)))";            // not needed
+                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heapAfter_sort, values, arr(j)))" inst_idx="begin+int::final(self_25, de.wiesler.SampleParameters::$num_samples)";
+                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heapAfter_select_n, values, arr(j)))" inst_idx="begin+int::final(self_25, de.wiesler.SampleParameters::$num_samples)" occ=2;
+                auto;
+            }
           @*/
-        {;;}
 
         return parameters;
     }
@@ -265,8 +281,7 @@ public final class Sorter {
             int[] bucket_starts,
             Storage storage
     ) {
-        /*@ normal_behaviour
-          @ ensures \disjoint(
+        /*@ assert \disjoint(
           @   values[*],
           @   bucket_starts[*],
           @   storage.tree[*],
@@ -278,12 +293,7 @@ public final class Sorter {
           @   storage.swap_2[*],
           @   storage.overflow[*]
           @ );
-          @
-          @ assignable \strictly_nothing;
-          @
-          @ measured_by end - begin, 1;
           @*/
-        {;;}
 
         //@ ghost \seq oldValues = \dl_seq_def_workaround(begin, end, values);
 
@@ -299,18 +309,10 @@ public final class Sorter {
         final int num_splitters = Functions.copy_unique(values, begin, begin + num_samples, num_buckets - 1, step, splitters);
 
         //@ ghost \seq before_from_sorted_samples = \dl_seq_def_workaround(begin, end, values);
-        /*@ normal_behaviour
-          @ ensures before_from_sorted_samples == before_copy_unique;
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
+        /*@ assert before_from_sorted_samples == before_copy_unique;
           @*/
-        {;;}
-        /*@ normal_behaviour
-          @ ensures \dl_seqPerm(before_from_sorted_samples, oldValues);
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
+        /*@ assert \dl_seqPerm(before_from_sorted_samples, oldValues);
           @*/
-        {;;}
 
         if (num_splitters <= 1) {
             return null;
@@ -323,50 +325,27 @@ public final class Sorter {
         final PartitionResult r = new PartitionResult(classifier.num_buckets(), classifier.equal_buckets());
 
         //@ ghost \seq valuesBeforePartition = \dl_seq_def_workaround(begin, end, values);
-        /*@ normal_behaviour
-          @ ensures valuesBeforePartition == before_from_sorted_samples;
-          @ ensures \invariant_for(classifier);
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
-        /*@ normal_behaviour
-          @ ensures \dl_seqPerm(valuesBeforePartition, oldValues);
-          @ ensures (\exists int i; begin <= i < end; (\exists int j; begin <= j < end; classifier.classOf(values[i]) != classifier.classOf(values[j])));
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
+        //@ assert valuesBeforePartition == before_from_sorted_samples;
+        //@ assert \invariant_for(classifier);
+
+        //@ assert \dl_seqPerm(valuesBeforePartition, oldValues);
+        //@ assert (\exists int i; begin <= i < end; (\exists int j; begin <= j < end; classifier.classOf(values[i]) != classifier.classOf(values[j])));
         Partition.partition(values, begin, end, bucket_starts, classifier, storage);
 
         //@ ghost \seq valuesAfterPartition = \dl_seq_def_workaround(begin, end, values);
-        /*@ normal_behaviour
-          @ ensures bucketIndexFromOffset(bucket_starts, classifier.num_buckets, end - begin);
-          @ ensures (\exists int i; 0 <= i < valuesAfterPartition.length;
+        //@ assert bucketIndexFromOffset(bucket_starts, classifier.num_buckets, end - begin);
+        /*@ assert (\exists int i; 0 <= i < valuesAfterPartition.length;
           @     (\exists int j; 0 <= j < valuesAfterPartition.length;
           @         classifier.classOf((int) valuesAfterPartition[i]) != classifier.classOf((int) valuesAfterPartition[j]))
           @ );
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
           @*/
-        {;;}
 
-        /*@ normal_behaviour
-          @ ensures (\exists int i; begin <= i < end; (\exists int j; begin <= j < end; classifier.classOf(values[i]) != classifier.classOf(values[j])));
-          @ ensures nonEmptyBucketsLemma(classifier, values, begin, end, bucket_starts);
-          @ ensures equalityBucketsLemma(classifier, values, begin, end, bucket_starts);
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
+        //@ assert (\exists int i; begin <= i < end; (\exists int j; begin <= j < end; classifier.classOf(values[i]) != classifier.classOf(values[j])));
+        //@ assert nonEmptyBucketsLemma(classifier, values, begin, end, bucket_starts);
+        //@ assert equalityBucketsLemma(classifier, values, begin, end, bucket_starts);
 
-        /*@ normal_behaviour
-          @ ensures notAllValuesInOneBucketLemma(bucket_starts, classifier.num_buckets, end - begin);
-          @ ensures allBucketsPartitionedLemma(classifier, values, begin, end, bucket_starts);
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
+        //@ assert notAllValuesInOneBucketLemma(bucket_starts, classifier.num_buckets, end - begin);
+        //@ assert allBucketsPartitionedLemma(classifier, values, begin, end, bucket_starts);
 
         // assignable: apply eq of allArrays
 
@@ -479,16 +458,9 @@ public final class Sorter {
     private static void sample_sort(int[] values, int begin, int end, Storage storage) {
         int[] bucket_starts = Storage.createArray(Constants.MAX_BUCKETS + 1);
 
-        /*@ normal_behaviour
-          @ ensures \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values)));
-          @ ensures \disjoint(\all_fields(values), \all_fields(bucket_starts), storage.allArrays);
-          @ ensures \disjoint(storage.*, storage.allArrays);
-          @
-          @ assignable \strictly_nothing;
-          @
-          @ measured_by end - begin, 2;
-          @*/
-        {;;}
+        //@ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values)));
+        //@ assert \disjoint(\all_fields(values), \all_fields(bucket_starts), storage.allArrays);
+        //@ assert \disjoint(storage.*, storage.allArrays);
 
         PartitionResult partition = partition(values, begin, end, bucket_starts, storage);
 
@@ -542,14 +514,8 @@ public final class Sorter {
             }
         }
 
-        /*@ normal_behaviour
-          @ ensures sortednessFromPartitionSorted(values, begin, end, bucket_starts, num_buckets);
-          @
-          @ assignable \strictly_nothing;
-          @
-          @ measured_by end - begin, 2;
+        /*@ assert sortednessFromPartitionSorted(values, begin, end, bucket_starts, num_buckets);
           @*/
-        {;;}
     }
 
     /*@ public normal_behaviour
