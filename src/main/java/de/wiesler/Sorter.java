@@ -532,6 +532,36 @@ public final class Sorter {
       @*/
     public static void fallback_sort(int[] values, int begin, int end) {
         insertion_sort(values, begin, end);
+        /*@ assert (\forall int element; true; Functions.countElement(values, begin, end, element) ==
+                                          \old(Functions.countElement(values, begin, end, element))) \by {
+                oss;
+                rule allRight;
+
+                // of these two, always only the first one works for some reason:
+                //expand on="de.wiesler.Functions.countElement(values, begin, end, element_0)";
+                //expand on="de.wiesler.Functions.countElement(values, begin, end, element_0)@heapAfter_insertion_sort";
+
+                expand on="de.wiesler.Functions::countElement(heap, values, begin, end, element_0)";
+                expand on="de.wiesler.Functions::countElement(heapAfter_insertion_sort, values, begin, end, element_0)";
+                rule seqPermCountsInt;
+                rule lenOfSeqDef occ=0;
+                rule lenOfSeqDef;
+                rule allLeftHide inst_t="element_0";
+
+                assert "begin < end";
+
+                rule bsum_shift_index occ=2;
+                rule bsum_shift_index occ=3;
+
+                assert "bsum{int uSub1;}(0, end - begin, \if (values[uSub1 + begin] = element_0) \then (1) \else (0))
+                      = bsum{int iv;}(0, end - begin, \if ( seqDef{int j;}(begin, end, values[j])[iv] = element_0) \then (1) \else (0))";
+
+                // None of those is able close the goal for some reason. In the GUI, it works fine.
+                // auto;
+                // Not sure if the parameters actually affect anything ...
+                // auto classAxioms=true expandQueries=true modelSearch=true dependencies=true proofSplitting=true steps=2000;
+            }
+          @*/
     }
 
     /*@ model_behaviour
