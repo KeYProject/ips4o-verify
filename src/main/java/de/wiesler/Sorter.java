@@ -42,20 +42,21 @@ public final class Sorter {
                 oss;
                 assert "wellFormed(heapAfter_sort)" \by { auto; }                   // this is missing in the original proof by JW, but somehow needed here (automode does not find it)
 
-                // let @intfinal_0="int::final(self, de.wiesler.SampleParameters::$num_samples)"; // does not work, seems that @ sign is removed too early
+                // TODO: not very robust: "self" is frequently renamed (e.g. to self_25)
+                let @numSamplesFinal="int::final(self, de.wiesler.SampleParameters::$num_samples)";
 
-                assert "seqPerm(seqDef{int j;}(add(begin, int::final(self_25, de.wiesler.SampleParameters::$num_samples)), end, int::select(heapAfter_sort, values, arr(j))),
-                                seqDef{int j;}(add(begin, int::final(self_25, de.wiesler.SampleParameters::$num_samples)), end, any::select(heapAfter_select_n, values, arr(j))))" \by {
-                    assert "seqDef{int j;}(begin + int::final(self_25, de.wiesler.SampleParameters::$num_samples), end, any::select(heapAfter_select_n, values, arr(j)))
-                          = seqDef{int j;}(begin + int::final(self_25, de.wiesler.SampleParameters::$num_samples), end, values[j]@heapAfter_sort)" \by {
+                assert "seqPerm(seqDef{int j;}(add(begin, @numSamplesFinal), end, int::select(heapAfter_sort, values, arr(j))),
+                                seqDef{int j;}(add(begin, @numSamplesFinal), end, any::select(heapAfter_select_n, values, arr(j))))" \by {
+                    assert "seqDef{int j;}(begin + @numSamplesFinal, end, any::select(heapAfter_select_n, values, arr(j)))
+                          = seqDef{int j;}(begin + @numSamplesFinal, end, values[j]@heapAfter_sort)" \by {
                         auto;
                     }
                     auto;
                 }
 
                 //rule seqPermConcatFW on="seqPerm(seqDef{int j;}(begin, add(int::_, int::_)), seqDef{int j;}(begin, add(int::_, int::_)))";            // not needed
-                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heapAfter_sort, values, arr(j)))" inst_idx="begin+int::final(self_25, de.wiesler.SampleParameters::$num_samples)";
-                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heapAfter_select_n, values, arr(j)))" inst_idx="begin+int::final(self_25, de.wiesler.SampleParameters::$num_samples)" occ=2;
+                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heapAfter_sort, values, arr(j)))" inst_idx="begin+@numSamplesFinal";
+                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heapAfter_select_n, values, arr(j)))" inst_idx="begin+@numSamplesFinal" occ=2;
                 auto;
             }
           @*/
@@ -394,21 +395,20 @@ public final class Sorter {
         int inner_begin = begin + bucket_starts[bucket];
         int inner_end = begin + bucket_starts[bucket + 1];
 
-        /*@ normal_behaviour
-          @ ensures Functions.bucketStartsOrdering(bucket_starts, num_buckets, bucket);
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
-        /*@ normal_behaviour
-          @ ensures 0 <= bucket_starts[bucket] <= bucket_starts[bucket + 1] <= bucket_starts[num_buckets] &&
-          @     (\forall int b; 0 <= b < num_buckets && b != bucket;
-          @         (b < bucket ==> 0 <= bucket_starts[b] <= bucket_starts[b + 1] <= bucket_starts[bucket]) &&
-          @         (b > bucket ==> bucket_starts[bucket + 1] <= bucket_starts[b] <= bucket_starts[b + 1] <= bucket_starts[num_buckets]));
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
+        /*@ assert A1: Functions.bucketStartsOrdering(bucket_starts, num_buckets, bucket) \by {
+                oss;
+                rule Contract_axiom_for_bucketStartsOrdering_in_Functions;
+                auto classAxioms=false steps=50;
+            }; */
+
+        /*@ assert A2: 0 <= bucket_starts[bucket] <= bucket_starts[bucket + 1] <= bucket_starts[num_buckets] &&
+                (\forall int b; 0 <= b < num_buckets && b != bucket;
+                    (b < bucket ==> 0 <= bucket_starts[b] <= bucket_starts[b + 1] <= bucket_starts[bucket]) &&
+                    (b > bucket ==> bucket_starts[bucket + 1] <= bucket_starts[b] <= bucket_starts[b + 1] <= bucket_starts[num_buckets])) \by {
+                expand on="de.wiesler.Functions::bucketStartsOrdering(heap, bucket_starts, num_buckets, bucket)";
+                auto;
+            }; */
+
         /*@ normal_behaviour
           @ ensures \dl_seqPerm(\dl_seq_def_workaround(begin + bucket_starts[bucket], inner_end, values), \old(\dl_seq_def_workaround(begin + bucket_starts[bucket], begin + bucket_starts[bucket + 1], values)));
           @ ensures Functions.isSortedSlice(values, begin + bucket_starts[bucket], inner_end);
@@ -422,20 +422,126 @@ public final class Sorter {
                 base_case_sort(values, inner_begin, inner_end);
             }
         }
-        /*@ normal_behaviour
-          @ ensures \dl_seq_def_workaround(begin, inner_begin, values) == \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values));
-          @ ensures \dl_seq_def_workaround(inner_end, end, values) == \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values));
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
-        /*@ normal_behaviour
-          @ ensures \dl_seqPerm(\dl_seq_def_workaround(begin, inner_begin, values), \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values)));
-          @ ensures \dl_seqPerm(\dl_seq_def_workaround(inner_end, end, values), \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values)));
-          @ assignable \strictly_nothing;
-          @ measured_by end - begin, 1;
-          @*/
-        {;;}
+
+        /*@ assert A3: \dl_seq_def_workaround(begin, inner_begin, values) == \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values)) \by {
+                oss;
+                auto steps=1500;
+            }; */
+        /*@ assert A4: \dl_seq_def_workaround(inner_end, end, values) == \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values)) \by {
+                auto steps=1500;
+            }; */
+        /*@ assert A5: \dl_seqPerm(\dl_seq_def_workaround(begin, inner_begin, values), \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values))) \by {
+                auto steps=1500;
+            }; */
+        /*@ assert A6: \dl_seqPerm(\dl_seq_def_workaround(inner_end, end, values), \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values))) \by {
+                auto steps=1500;
+            }; */
+
+        // individual parts of the postcondition:
+        /*@ assert POST0: \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+                oss;
+                // TODO: seems that abbreviations (bound by let) do not work in assumes
+                let @middle="begin + bucket_starts[bucket]";
+                let @middleSucc="begin + bucket_starts[1 + bucket]";
+                rule seqPermConcatFW on="seqPerm(seqDef{int j;}(begin + bucket_starts[1 + bucket], end, any::_), seqDef{int j;}(begin + bucket_starts[1 + bucket], end, values[j]))"
+                                     assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], begin + bucket_starts[1 + bucket], any::_), seqDef{int j;}(begin + bucket_starts[bucket], begin + bucket_starts[1 + bucket], values[j]))==>";
+                rule seqPermConcatFW on="seqPerm(seqConcat(Seq::_, Seq::_), seqConcat(Seq::_, Seq::_))"
+                                     assumes="seqPerm(seqDef{int j;}(begin, begin + bucket_starts[bucket], any::_), seqDef{int j;}(begin, begin + bucket_starts[bucket], values[j]))==>";
+                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(anon(Heap::_, LocSet::_, Heap::_), values, arr(j)))" inst_idx="@middle";
+                rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heap, values, arr(j)))" inst_idx="@middle";
+                cut "begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end";
+                rule replace_known_left on="begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" occ=1;
+                rule replace_known_left on="begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" occ=1;
+                oss;
+                rule seqDef_split on="seqDef{int uSub1;}(@middle, end, any::select(heap, values, arr(uSub1)))" inst_idx="@middleSucc";
+                rule seqDef_split on="seqDef{int uSub1;}(@middle, end, any::select(anon(Heap::_, LocSet::_, Heap::_), values, arr(uSub1)))" inst_idx="@middleSucc";
+
+                // TODO: same problem as always: does not work
+                //auto steps=1000 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
+                leave;
+            }; */
+
+        /*@ assert POST1: Sorter.allBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, 0, bucket + 1) \by {
+                oss;
+                macro "simp-int";
+                expand on="de.wiesler.Sorter::allBucketsInRangeSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets, 0, bucket + 1)";
+                oss;
+                macro "simp-int";
+                witness "\forall int b; (0 <= b & b <= bucket -> de.wiesler.Functions::isSortedSlice(Heap::_, int[]::_, int::_, int::_) = TRUE)" as="b_0";
+                assert "b_0 != bucket" \by {
+                    auto steps=200 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
+                }
+                expand on="de.wiesler.Sorter::allBucketsInRangeSorted(Heap::_, values, begin, end, bucket_starts, num_buckets, 0, bucket)";
+
+                // TODO: instantiate command does not support holes/ellipses at the moment
+                rule allLeftHide inst_formula="\forall int b; (b < num_buckets & b >= 0 & b != bucket -> __)" inst_t="b_0";
+
+                // TODO: in the GUI this works with the setting classAxioms:Delayed, which can not be selected in the script currently
+                //auto steps=7000 dependencies=true classAxioms=true modelSearch=false expandQueries=false;
+                leave;
+            }; */
+        /*@ assert POST2: Sorter.allBucketsPartitioned(values, begin, end, bucket_starts, num_buckets) \by {
+                oss;
+                macro "simp-int";
+                expand on="de.wiesler.Sorter::allBucketsPartitioned(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets)";
+                oss;
+                witness "\forall int b; (0 <= b & b < num_buckets -> __)" as="b_0";
+                expand on="de.wiesler.Sorter::allBucketsPartitioned(heap, values, begin, end, bucket_starts, num_buckets)";
+                oss;
+                rule allLeftHide on="\forall int b; (b < num_buckets & b >= 0 & b != bucket -> __)" inst_t="b_0";
+                expand on="de.wiesler.Sorter::isBucketPartitioned(heap, values, begin, end, int::_, int::_)";
+                expand on="de.wiesler.Sorter::isBucketPartitioned(Heap::_, values, begin, end, int::_, int::_)";
+
+                assert "0 <= b_0 & b_0 < num_buckets";
+
+                macro "nosplit-prop";
+                macro "simp-int";
+                oss;
+
+                rule allRight;
+                macro "nosplit-prop";
+                rule allRight;
+                rule allLeftHide on="\forall int b; __" inst_t="b_0";
+
+                assert "b_0 = bucket" \by {
+                    leave;
+                }
+
+                assert "int::select(anon(heap, LocSet::_, anonOut_heap), values, arr(j_0)) = values[j_0]" \by {
+                    leave;
+                }
+
+                leave;
+            }; */
+        /*@ assert POST3: Sorter.smallBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets) \by {
+                oss;
+                macro "simp-int";
+                expand on="de.wiesler.Sorter::smallBucketsInRangeSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets)";
+                expand on="de.wiesler.Sorter::smallBucketIsSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, int::_, int::_)";
+                auto steps=20;
+            }; */
+        /*@ assert POST4: equal_buckets ==> Sorter.equalityBucketsInRange(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets - 1) \by {
+                oss;
+                rule impRight;
+                macro "simp-int";
+                expand on="de.wiesler.Sorter::equalityBucketsInRange(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets + (-1))";
+                oss;
+                witness "\forall int b; (bucket + 1 <= b & b < num_buckets + (-1) & javaMod(b, 2) = 1 -> de.wiesler.Sorter::isEqualityBucket(Heap::_, int[]::_, int::_, int::_) = TRUE)" as="b_0";
+                expand on="de.wiesler.Sorter::equalityBucketsInRange(heap, values, begin, end, bucket_starts, num_buckets, 1 + bucket, -1 + num_buckets)";
+                oss;
+                rule andLeft;
+                rule allLeftHide on="\forall int b; (1 + bucket <= b & b < -1 + num_buckets & javaMod(b, 2) = 1 -> __)" inst_t="b_0";
+                rule allLeftHide on="\forall int b; (b < num_buckets & b >= 0 & b != bucket -> __)" inst_t="b_0";
+                leave;
+                // TODO: seems to be another case where the auto mode in the GUI seems to work (with the exact same settings). Also, applying the 4000 rules via script is considerably slower ...
+                //auto steps=4000 dependencies=true classAxioms=false modelSearch=false expandQueries=false;
+            }; */
+        /*@ assert POST5: \invariant_for(storage) \by {
+                auto steps=1500 dependencies=true;
+            }; */
+
+        // TODO: assignable?
+        // auto steps=4000 is sufficient
     }
 
     /*@ public normal_behaviour
@@ -554,7 +660,7 @@ public final class Sorter {
                 rule bsum_shift_index occ=3;
 
                 assert "bsum{int uSub1;}(0, end - begin, \if (values[uSub1 + begin] = element_0) \then (1) \else (0))
-                      = bsum{int iv;}(0, end - begin, \if ( seqDef{int j;}(begin, end, values[j])[iv] = element_0) \then (1) \else (0))";
+                      = bsum{int iv;}(0, end - begin, \if (seqDef{int j;}(begin, end, values[j])[iv] = element_0) \then (1) \else (0))";
 
                 // None of those is able close the goal for some reason. In the GUI, it works fine.
                 // auto;
@@ -616,10 +722,56 @@ public final class Sorter {
             for(int i = k - 1; i >= begin && value < values[i]; i--) {
                 values[hole] = values[i];
                 hole = i;
+
+                // TODO: there seems to be a bug in interplay of loop scopes and script ("program variable h not known") -> make sure to use loop transformation rule here!
+                /*@ assert insSort1: \dl_seqPerm(seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+                    oss;
+                    rule seqPermFromSwap assumes="seqPerm(de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_), seqDef{int j;}(begin, end, values[j]))==>";
+                    // TODO: does not work: j (bound variable of seqDef) can not be resolved
+                    //rule narrowSelectArrayType on="any::select(heap, values, arr(j))" assumes="wellFormed(heap)==>values=null";
+                    assert "seqDef{int j;}(begin, end, values[j]) = seqDef{int j;}(begin, end, any::select(heap, values, arr(j)))";
+                    rule replace_known_left on="seqDef{int j;}(begin, end, values[j]) = seqDef{int j;}(begin, end, any::select(heap, values, arr(j)))" occ=1;
+                    oss;
+                    rule exRightHide inst_t="i_0 + 1 - begin";
+                    rule exRightHide inst_t="i_0 - begin";
+
+                    // TODO: why does this not select the same term in the antecedent? bug?
+                    expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
+                    expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
+                    expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
+                    expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
+                    rule equalityToSeqGetAndSeqLen occ=1;
+
+                    // TODO: not working
+                    //auto steps=20000 classAxioms=false dependency=false modelSearch=false expandQueries=false;
+
+                    // workaround:
+
+                    set steps=20000;
+                    set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                    set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                    set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                    set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                    tryclose;
+                } @*/
             }
 
+            // @ ghost \dl_seq tmp = \dl_seq_def_workaround(begin, end, values);
+
             values[hole] = value;
+
+            // ???
+            /* @ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+                    assert \dl_seq_def_workaround(begin, end, values) = seqUpd(tmp, begin * -1 + hole, values[k]);
+                    auto;
+                } @*/
         }
+
+        /* @ assert INS_SORT_3: true \by {
+
+                // the last branch still needs quite heavy automation ...
+                auto steps=11000 dependency=false classAxioms=false expandQueries=false modelSearch=false;
+            } @*/
     }
 
     /*@ public normal_behaviour
