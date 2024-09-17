@@ -21,7 +21,7 @@ public final class Sorter {
       @*/
     private static SampleParameters sample(int[] values, int begin, int end, Storage storage) {
         SampleParameters parameters = new SampleParameters(end - begin);
-        /*@ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+        /*@ assert sample0: \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
                 oss;
                 assert "seqDef{int j;}(begin, end, any::select(heap, values, arr(j))) = seqDef{int j;}(begin, end, any::select(heapAfter_SampleParameters, values, arr(j)))" \by {
                     auto;
@@ -31,14 +31,14 @@ public final class Sorter {
           @*/
 
         Functions.select_n(values, begin, end, parameters.num_samples);
-        /*@ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+        /*@ assert sample1: \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
                 auto;
             };
           @*/
 
         //@ ghost \seq before_sort = \dl_seq_def_workaround(begin, end, values);
         sort(values, begin, begin + parameters.num_samples, storage);
-        /*@ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), before_sort) \by {
+        /*@ assert sample2: \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), before_sort) \by {
                 oss;
                 assert "wellFormed(heapAfter_sort)" \by { auto; }                   // this is missing in the original proof by JW, but somehow needed here (automode does not find it)
 
@@ -395,13 +395,13 @@ public final class Sorter {
         int inner_begin = begin + bucket_starts[bucket];
         int inner_end = begin + bucket_starts[bucket + 1];
 
-        /*@ assert A1: Functions.bucketStartsOrdering(bucket_starts, num_buckets, bucket) \by {
+        /*@ assert ssortRec0: Functions.bucketStartsOrdering(bucket_starts, num_buckets, bucket) \by {
                 oss;
                 rule Contract_axiom_for_bucketStartsOrdering_in_Functions;
                 auto classAxioms=false steps=50;
             }; */
 
-        /*@ assert A2: 0 <= bucket_starts[bucket] <= bucket_starts[bucket + 1] <= bucket_starts[num_buckets] &&
+        /*@ assert ssortRec1: 0 <= bucket_starts[bucket] <= bucket_starts[bucket + 1] <= bucket_starts[num_buckets] &&
                 (\forall int b; 0 <= b < num_buckets && b != bucket;
                     (b < bucket ==> 0 <= bucket_starts[b] <= bucket_starts[b + 1] <= bucket_starts[bucket]) &&
                     (b > bucket ==> bucket_starts[bucket + 1] <= bucket_starts[b] <= bucket_starts[b + 1] <= bucket_starts[num_buckets])) \by {
@@ -423,22 +423,22 @@ public final class Sorter {
             }
         }
 
-        /*@ assert A3: \dl_seq_def_workaround(begin, inner_begin, values) == \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values)) \by {
+        /*@ assert ssortRec2: \dl_seq_def_workaround(begin, inner_begin, values) == \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values)) \by {
                 oss;
                 auto steps=1500;
             }; */
-        /*@ assert A4: \dl_seq_def_workaround(inner_end, end, values) == \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values)) \by {
+        /*@ assert ssortRec3: \dl_seq_def_workaround(inner_end, end, values) == \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values)) \by {
                 auto steps=1500;
             }; */
-        /*@ assert A5: \dl_seqPerm(\dl_seq_def_workaround(begin, inner_begin, values), \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values))) \by {
+        /*@ assert ssortRec4: \dl_seqPerm(\dl_seq_def_workaround(begin, inner_begin, values), \old(\dl_seq_def_workaround(begin, begin + bucket_starts[bucket], values))) \by {
                 auto steps=1500;
             }; */
-        /*@ assert A6: \dl_seqPerm(\dl_seq_def_workaround(inner_end, end, values), \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values))) \by {
+        /*@ assert ssortRec5: \dl_seqPerm(\dl_seq_def_workaround(inner_end, end, values), \old(\dl_seq_def_workaround(begin + bucket_starts[bucket + 1], end, values))) \by {
                 auto steps=1500;
             }; */
 
         // individual parts of the postcondition:
-        /*@ assert POST0: \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+        /*@ assert ssortRec_post0: \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
                 oss;
                 // TODO: seems that abbreviations (bound by let) do not work in assumes
                 let @middle="begin + bucket_starts[bucket]";
@@ -449,7 +449,9 @@ public final class Sorter {
                                      assumes="seqPerm(seqDef{int j;}(begin, begin + bucket_starts[bucket], any::_), seqDef{int j;}(begin, begin + bucket_starts[bucket], values[j]))==>";
                 rule seqDef_split on="seqDef{int j;}(begin, end, any::select(anon(Heap::_, LocSet::_, Heap::_), values, arr(j)))" inst_idx="@middle";
                 rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heap, values, arr(j)))" inst_idx="@middle";
-                cut "begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end";
+                assert "begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" \by {
+                    tryclose branch steps=1000;
+                }
                 rule replace_known_left on="begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" occ=1;
                 rule replace_known_left on="begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" occ=1;
                 oss;
@@ -458,10 +460,17 @@ public final class Sorter {
 
                 // TODO: same problem as always: does not work
                 //auto steps=1000 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
-                leave;
+                //leave;
+
+                // workaround: this also affects all branches visited afterwards!
+                set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                tryclose branch steps=1000;
             }; */
 
-        /*@ assert POST1: Sorter.allBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, 0, bucket + 1) \by {
+        /*@ assert ssortRec_post1: Sorter.allBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, 0, bucket + 1) \by {
                 oss;
                 macro "simp-int";
                 expand on="de.wiesler.Sorter::allBucketsInRangeSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets, 0, bucket + 1)";
@@ -469,7 +478,14 @@ public final class Sorter {
                 macro "simp-int";
                 witness "\forall int b; (0 <= b & b <= bucket -> de.wiesler.Functions::isSortedSlice(Heap::_, int[]::_, int::_, int::_) = TRUE)" as="b_0";
                 assert "b_0 != bucket" \by {
-                    auto steps=200 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
+                    //auto steps=200 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
+
+                    // workaround: this also affects all branches visited afterwards!
+                    set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
+                    set key="DEP_OPTIONS_KEY" value="DEP_ON";
+                    set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                    set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                    tryclose branch steps=200;
                 }
                 expand on="de.wiesler.Sorter::allBucketsInRangeSorted(Heap::_, values, begin, end, bucket_starts, num_buckets, 0, bucket)";
 
@@ -478,9 +494,16 @@ public final class Sorter {
 
                 // TODO: in the GUI this works with the setting classAxioms:Delayed, which can not be selected in the script currently
                 //auto steps=7000 dependencies=true classAxioms=true modelSearch=false expandQueries=false;
-                leave;
+                //leave;
+
+                // workaround: this also affects all branches visited afterwards!
+                set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
+                set key="DEP_OPTIONS_KEY" value="DEP_ON";
+                set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                tryclose branch steps=7000;
             }; */
-        /*@ assert POST2: Sorter.allBucketsPartitioned(values, begin, end, bucket_starts, num_buckets) \by {
+        /*@ assert ssortRec_post2: Sorter.allBucketsPartitioned(values, begin, end, bucket_starts, num_buckets) \by {
                 oss;
                 macro "simp-int";
                 expand on="de.wiesler.Sorter::allBucketsPartitioned(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets)";
@@ -492,7 +515,9 @@ public final class Sorter {
                 expand on="de.wiesler.Sorter::isBucketPartitioned(heap, values, begin, end, int::_, int::_)";
                 expand on="de.wiesler.Sorter::isBucketPartitioned(Heap::_, values, begin, end, int::_, int::_)";
 
-                assert "0 <= b_0 & b_0 < num_buckets";
+                assert "0 <= b_0 & b_0 < num_buckets" {
+
+                }
 
                 macro "nosplit-prop";
                 macro "simp-int";
@@ -504,23 +529,23 @@ public final class Sorter {
                 rule allLeftHide on="\forall int b; __" inst_t="b_0";
 
                 assert "b_0 = bucket" \by {
-                    leave;
+                    tryclose branch steps=1000;
                 }
 
                 assert "int::select(anon(heap, LocSet::_, anonOut_heap), values, arr(j_0)) = values[j_0]" \by {
-                    leave;
+                    tryclose branch steps=1000;
                 }
 
-                leave;
+                tryclose branch steps=1000;
             }; */
-        /*@ assert POST3: Sorter.smallBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets) \by {
+        /*@ assert ssortRec_post3: Sorter.smallBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets) \by {
                 oss;
                 macro "simp-int";
                 expand on="de.wiesler.Sorter::smallBucketsInRangeSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets)";
                 expand on="de.wiesler.Sorter::smallBucketIsSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, int::_, int::_)";
                 auto steps=20;
             }; */
-        /*@ assert POST4: equal_buckets ==> Sorter.equalityBucketsInRange(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets - 1) \by {
+        /*@ assert ssortRec_post4: equal_buckets ==> Sorter.equalityBucketsInRange(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets - 1) \by {
                 oss;
                 rule impRight;
                 macro "simp-int";
@@ -535,8 +560,16 @@ public final class Sorter {
                 leave;
                 // TODO: seems to be another case where the auto mode in the GUI seems to work (with the exact same settings). Also, applying the 4000 rules via script is considerably slower ...
                 //auto steps=4000 dependencies=true classAxioms=false modelSearch=false expandQueries=false;
+
+                // workaround: this also affects all branches visited afterwards!
+                set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                set key="DEP_OPTIONS_KEY" value="DEP_ON";
+                set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                tryclose branch steps=4000;
+
             }; */
-        /*@ assert POST5: \invariant_for(storage) \by {
+        /*@ assert ssortRec_post5: \invariant_for(storage) \by {
                 auto steps=1500 dependencies=true;
             }; */
 
@@ -638,7 +671,7 @@ public final class Sorter {
       @*/
     public static void fallback_sort(int[] values, int begin, int end) {
         insertion_sort(values, begin, end);
-        /*@ assert (\forall int element; true; Functions.countElement(values, begin, end, element) ==
+        /*@ assert fallbackSort0: (\forall int element; true; Functions.countElement(values, begin, end, element) ==
                                           \old(Functions.countElement(values, begin, end, element))) \by {
                 oss;
                 rule allRight;
@@ -665,8 +698,11 @@ public final class Sorter {
                 // None of those is able close the goal for some reason. In the GUI, it works fine.
                 // auto;
                 // Not sure if the parameters actually affect anything ...
-                // auto classAxioms=true expandQueries=true modelSearch=true dependencies=true proofSplitting=true steps=2000;
-            }
+                //auto classAxioms=true expandQueries=true modelSearch=true dependencies=true proofSplitting=true steps=2000;
+
+                // workaround (more detailed params not supported at the moment)
+                tryclose branch steps=2000;
+            };
           @*/
     }
 
@@ -708,6 +744,21 @@ public final class Sorter {
             int value = values[k];
             int hole = k;
 
+            /*@ assert insSort0: \dl_seqPerm(
+                  seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value),
+                  \old(\dl_seq_def_workaround(begin, end, values))) \by {
+
+                    assert "seqDef{int j;}(begin, end, any::select(heap[anon(arrayRange(values, begin, -1 + end), anon_heap_LOOP)], values, arr(j)))
+                        = de.wiesler.Sorter::seqUpd(seqDef{int j;}(begin, end,
+                                          any::select(heap[anon(arrayRange(values, begin, -1 + end), anon_heap_LOOP)],
+                                                      values,
+                                                      arr(j))),
+                           javaSubInt(k_0, begin), arr_0)" \by {
+                        auto steps=7000 classAxioms=true dependency=false modelSearch=false expandQueries=false;
+                    }
+                    auto steps=200 add_applyEqReverse=high classAxioms=false dependency=false modelSearch=false expandQueries=false;
+                } @*/
+
             /*@ loop_invariant hole == i + 1;
               @ loop_invariant begin-1 <= i < k;
               @ loop_invariant i == k - 1 || Functions.isSortedSlice(values, begin, k+1);
@@ -725,7 +776,14 @@ public final class Sorter {
 
                 // TODO: there seems to be a bug in interplay of loop scopes and script ("program variable h not known") -> make sure to use loop transformation rule here!
                 /*@ assert insSort1: \dl_seqPerm(seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+                        leave;
+                    }
+                  @*/
+                /* @ assert insSort1: \dl_seqPerm(seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+
                     oss;
+                    leave;
+
                     rule seqPermFromSwap assumes="seqPerm(de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_), seqDef{int j;}(begin, end, values[j]))==>";
                     // TODO: does not work: j (bound variable of seqDef) can not be resolved
                     //rule narrowSelectArrayType on="any::select(heap, values, arr(j))" assumes="wellFormed(heap)==>values=null";
@@ -737,9 +795,9 @@ public final class Sorter {
 
                     // TODO: why does this not select the same term in the antecedent? bug?
                     expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
-                    expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
-                    expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
-                    expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
+                    // expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
+                    // expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
+                    // expand on="de.wiesler.Sorter::seqUpd(Seq::_, int::_, int::_)" occ=0;
                     rule equalityToSeqGetAndSeqLen occ=1;
 
                     // TODO: not working
@@ -747,7 +805,7 @@ public final class Sorter {
 
                     // workaround:
 
-                    set steps=20000;
+                    set steps=20000;    // TODO: this also affects all branches visited afterwards!
                     set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
                     set key="DEP_OPTIONS_KEY" value="DEP_OFF";
                     set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
@@ -761,13 +819,13 @@ public final class Sorter {
             values[hole] = value;
 
             // ???
-            /* @ assert \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
+            /* @ assert insSort2: \dl_seqPerm(\dl_seq_def_workaround(begin, end, values), \old(\dl_seq_def_workaround(begin, end, values))) \by {
                     assert \dl_seq_def_workaround(begin, end, values) = seqUpd(tmp, begin * -1 + hole, values[k]);
                     auto;
                 } @*/
         }
 
-        /* @ assert INS_SORT_3: true \by {
+        /* @ assert insSort3: true \by {
 
                 // the last branch still needs quite heavy automation ...
                 auto steps=11000 dependency=false classAxioms=false expandQueries=false modelSearch=false;
@@ -820,20 +878,20 @@ public final class Sorter {
       @*/
     public static void sort(int[] values) {
         Storage storage = new Storage();
-        /*@ assert \disjoint(storage.allArrays, values[*]) \by {
+        /*@ assert sort0: \disjoint(storage.allArrays, values[*]) \by {
                 oss;
                 rule disjointToElementOf;
                 auto;
             }; @*/
         sort(values, 0, values.length, storage);
-        /*@ assert \dl_seqPerm(\dl_array2seq(values), \old(\dl_array2seq(values))) \by {
+        /*@ assert sort1: \dl_seqPerm(\dl_array2seq(values), \old(\dl_array2seq(values))) \by {
                 oss;
                 assert "seqDef{int u;}(0, values.length, any::select(heap, values, arr(u))) = seqDef{int j;}(0, values.length, any::select(heapAfter_Storage, values, arr(j)))" \by {
                     auto;
                 }
                 auto;
             } @*/
-        /*@ assert \dl_assignable(\old(\dl_heap()), values[*]) \by {
+        /*@ assert sort2: \dl_assignable(\old(\dl_heap()), values[*]) \by {
                 oss;
                 rule assignableDefinition;
                 macro "simp-heap";
