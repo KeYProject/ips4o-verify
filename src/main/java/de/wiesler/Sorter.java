@@ -449,9 +449,11 @@ public final class Sorter {
                                      assumes="seqPerm(seqDef{int j;}(begin, begin + bucket_starts[bucket], any::_), seqDef{int j;}(begin, begin + bucket_starts[bucket], values[j]))==>";
                 rule seqDef_split on="seqDef{int j;}(begin, end, any::select(anon(Heap::_, LocSet::_, Heap::_), values, arr(j)))" inst_idx="@middle";
                 rule seqDef_split on="seqDef{int j;}(begin, end, any::select(heap, values, arr(j)))" inst_idx="@middle";
+
                 assert "begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" \by {
                     tryclose branch steps=1000;
                 }
+
                 rule replace_known_left on="begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" occ=1;
                 rule replace_known_left on="begin <= begin + bucket_starts[bucket] & begin + bucket_starts[bucket] < end" occ=1;
                 oss;
@@ -477,16 +479,29 @@ public final class Sorter {
                 oss;
                 macro "simp-int";
                 witness "\forall int b; (0 <= b & b <= bucket -> de.wiesler.Functions::isSortedSlice(Heap::_, int[]::_, int::_, int::_) = TRUE)" as="b_0";
-                assert "b_0 != bucket" \by {
-                    //auto steps=200 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
 
-                    // workaround: this also affects all branches visited afterwards!
+                cut "b_0 != bucket";
+                branches "push";
+                branches "select" child=1;
                     set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
                     set key="DEP_OPTIONS_KEY" value="DEP_ON";
                     set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                     set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                     tryclose branch steps=200;
-                }
+                branches "select" child=0;
+                branches "pop";
+
+                //assert "b_0 != bucket" \by {
+                    //auto steps=200 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
+
+                //    // workaround: this also affects all branches visited afterwards!
+                //    set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
+                //    set key="DEP_OPTIONS_KEY" value="DEP_ON";
+                //    set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                //    set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                //    tryclose branch steps=200;
+                //}
+
                 expand on="de.wiesler.Sorter::allBucketsInRangeSorted(Heap::_, values, begin, end, bucket_starts, num_buckets, 0, bucket)";
 
                 // TODO: instantiate command does not support holes/ellipses at the moment
@@ -502,6 +517,8 @@ public final class Sorter {
                 set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                 set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                 tryclose branch steps=7000;
+
+                // TODO: for some strange reason, this branch does not close directly, only when the script is applied manually in GUI ...
             }; */
         /*@ assert ssortRec_post2: Sorter.allBucketsPartitioned(values, begin, end, bucket_starts, num_buckets) \by {
                 oss;
@@ -515,9 +532,12 @@ public final class Sorter {
                 expand on="de.wiesler.Sorter::isBucketPartitioned(heap, values, begin, end, int::_, int::_)";
                 expand on="de.wiesler.Sorter::isBucketPartitioned(Heap::_, values, begin, end, int::_, int::_)";
 
-                assert "0 <= b_0 & b_0 < num_buckets" {
-
-                }
+                cut "0 <= b_0 & b_0 < num_buckets";
+                branches "push";
+                branches "select" child=1;
+                    tryclose branch steps=1000;
+                branches "select" child=0;
+                branches "pop";
 
                 macro "nosplit-prop";
                 macro "simp-int";
@@ -528,22 +548,123 @@ public final class Sorter {
                 rule allRight;
                 rule allLeftHide on="\forall int b; __" inst_t="b_0";
 
-                assert "b_0 = bucket" \by {
-                    tryclose branch steps=1000;
-                }
+                cut "b_0 = bucket";
+                branches "push";
+                branches "select" child=1;
 
-                assert "int::select(anon(heap, LocSet::_, anonOut_heap), values, arr(j_0)) = values[j_0]" \by {
-                    tryclose branch steps=1000;
-                }
+                    cut "b_0 > bucket";
+                    branches "push";
+                    branches "select" child=1;
+                        cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0)) = int::select(heap, values, arr(i_0))";
+                        branches "push";
+                        branches "select" child=1;
+                            set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                            set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                            set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                            set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                            tryclose branch steps=1200;
+                        branches "select" child=0;
+                        branches "pop";
 
-                tryclose branch steps=1000;
+                        rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0))" occ=1;
+
+                        rule impLeft occ=1;
+                            tryclose branch steps=200;
+
+                        rule allLeft inst_t="i_0";
+                        rule impLeft  occ=1;
+                            tryclose branch steps=400;
+
+                        rule allLeftHide inst_t="j_0" occ=1;
+
+                        cut "begin + bucket_starts[bucket] <= j_0 & j_0 < begin + bucket_starts[bucket + 1]";
+                        branches "push";
+                        branches "select" child=1;
+                            set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                            set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                            set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                            set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                            tryclose branch steps=10000;
+                        branches "select" child=0;
+                        branches "pop";
+
+            //            // TODO: Showstopper! parameters that are variables do not work. I was not able to fix it ... When seqPermForall is applied manually, the rest of the script closes the branch.
+            //            rule seqPermForall inst_phi="lt(int::select(heap, values, arr(i_0)), (int)x)" inst_x=x inst_iv=iv assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
+            //
+            //            rule equiv_left;
+            //                rule allLeftHide inst_t="j_0 - (begin + bucket_starts[bucket])" occ=0;
+            //                tryclose branch steps=2000;
+            //
+            //            witness "\forall int iv; (__ -> lt(int::select(heap, values, arr(i_0)), (int)(any::seqGet(seqDef{int j;}(add(begin, int::select(heap, bucket_starts, arr(bucket))), add(begin, int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))), int::select(heap, values, arr(j))), iv))))" as="iv_0";
+            //
+            //
+            //            rule impLeft occ=0;
+            //                tryclose branch steps=600;
+            //
+            //            rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
+            //
+            //            tryclose branch steps=2000;
+
+                    branches "select" child=0;
+                    branches "pop";
+
+                    cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0)) = int::select(heap, values, arr(i_0))";
+                    branches "select" child=1;
+                        set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                        set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                        set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                        set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                        tryclose branch steps=2000;
+                    branches "select" child=0;
+                    branches "pop";
+
+                    rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0))" occ=1;
+
+                    rule implLeft occ=0;
+
+                    rule allLeftHide inst_t="i_0";
+                    rule impLeft occ=0;
+                        tryclose branch steps=1000;
+                    rule allLeftHide inst_t="j_0";
+
+                branches "select" child=0;
+                branches "pop";
+
+                // TODO: seems that abbreviations do not work in cuts ...
+                // let @vjAtLargerHeap="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))";
+
+                cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0)) = int::select(heap, values, arr(j_0))";
+                branches "push";
+                branches "select" child=1;
+                    set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                    set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                    set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                    set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                    tryclose branch steps=400;
+                branches "select" child=0;
+                branches "pop";
+
+                rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))" occ=1;
+
+           //     // TODO: Showstopper! parameters that are variables do not work. I was not able to fix it ...
+           //     rule seqPermForall inst_phi="lt((int)x, int::select(heap, values, arr(j_0)))" inst_x=x inst_iv=iv assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
+           //
+           //     rule equiv_left;
+           //         rule allLeftHide inst_t="i_0 - (begin + bucket_starts[bucket])" occ=0;
+           //         tryclose branch steps=2000;
+           //
+           //     rule allRight occ=1;
+           //     rule impLeft occ=1;
+           //         tryclose branch steps=50;
+           //     rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
+           //     tryclose branch steps=6000;
             }; */
         /*@ assert ssortRec_post3: Sorter.smallBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets) \by {
                 oss;
                 macro "simp-int";
                 expand on="de.wiesler.Sorter::smallBucketsInRangeSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets)";
                 expand on="de.wiesler.Sorter::smallBucketIsSorted(anon(Heap::_, LocSet::_, Heap::_), values, begin, end, int::_, int::_)";
-                auto steps=20;
+                tryclose branch steps=100;
             }; */
         /*@ assert ssortRec_post4: equal_buckets ==> Sorter.equalityBucketsInRange(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets - 1) \by {
                 oss;
@@ -557,7 +678,7 @@ public final class Sorter {
                 rule andLeft;
                 rule allLeftHide on="\forall int b; (1 + bucket <= b & b < -1 + num_buckets & javaMod(b, 2) = 1 -> __)" inst_t="b_0";
                 rule allLeftHide on="\forall int b; (b < num_buckets & b >= 0 & b != bucket -> __)" inst_t="b_0";
-                leave;
+
                 // TODO: seems to be another case where the auto mode in the GUI seems to work (with the exact same settings). Also, applying the 4000 rules via script is considerably slower ...
                 //auto steps=4000 dependencies=true classAxioms=false modelSearch=false expandQueries=false;
 
@@ -573,8 +694,8 @@ public final class Sorter {
                 auto steps=1500 dependencies=true;
             }; */
 
-        // TODO: assignable?
-        // auto steps=4000 is sufficient
+        // assignable branch and rest:
+        // auto steps=4000 or tryclose steps=4000 is sufficient (make sure to have the global steps >= 4000 before starting scriptAwareMacro!)
     }
 
     /*@ public normal_behaviour

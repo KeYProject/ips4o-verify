@@ -40,7 +40,7 @@
 [StrategyProperty]USER_TACLETS_OPTIONS_KEY3=USER_TACLETS_OFF
 [StrategyProperty]VBT_PHASE=VBT_SYM_EX
 [Strategy]ActiveStrategy=JavaCardDLStrategy
-[Strategy]MaximumNumberOfAutomaticApplications=2000
+[Strategy]MaximumNumberOfAutomaticApplications=4000
 [Strategy]Timeout=-1
 "
 }
