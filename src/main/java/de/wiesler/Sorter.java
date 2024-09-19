@@ -482,13 +482,13 @@ public final class Sorter {
 
                 cut "b_0 != bucket";
                 branches "push";
-                branches "select" child=1;
+                branches "select" branch="show";
                     set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
                     set key="DEP_OPTIONS_KEY" value="DEP_ON";
                     set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                     set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                     tryclose branch steps=200;
-                branches "select" child=0;
+                branches "select" branch="use";
                 branches "pop";
 
                 //assert "b_0 != bucket" \by {
@@ -534,9 +534,9 @@ public final class Sorter {
 
                 cut "0 <= b_0 & b_0 < num_buckets";
                 branches "push";
-                branches "select" child=1;
+                branches "select" branch="show";
                     tryclose branch steps=1000;
-                branches "select" child=0;
+                branches "select" branch="use";
                 branches "pop";
 
                 macro "nosplit-prop";
@@ -550,101 +550,109 @@ public final class Sorter {
 
                 cut "b_0 = bucket";
                 branches "push";
-                branches "select" child=1;
-
-                    cut "b_0 > bucket";
-                    branches "push";
-                    branches "select" child=1;
-                        cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0)) = int::select(heap, values, arr(i_0))";
-                        branches "push";
-                        branches "select" child=1;
-                            set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
-                            set key="DEP_OPTIONS_KEY" value="DEP_OFF";
-                            set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
-                            set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
-                            tryclose branch steps=1200;
-                        branches "select" child=0;
-                        branches "pop";
-
-                        rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0))" occ=1;
-
-                        rule impLeft occ=1;
-                            tryclose branch steps=200;
-
-                        rule allLeft inst_t="i_0";
-                        rule impLeft  occ=1;
-                            tryclose branch steps=400;
-
-                        rule allLeftHide inst_t="j_0" occ=1;
-
-                        cut "begin + bucket_starts[bucket] <= j_0 & j_0 < begin + bucket_starts[bucket + 1]";
-                        branches "push";
-                        branches "select" child=1;
-                            set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
-                            set key="DEP_OPTIONS_KEY" value="DEP_OFF";
-                            set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
-                            set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
-                            tryclose branch steps=10000;
-                        branches "select" child=0;
-                        branches "pop";
-
-            //            // TODO: Showstopper! parameters that are variables do not work. I was not able to fix it ... When seqPermForall is applied manually, the rest of the script closes the branch.
-            //            rule seqPermForall inst_phi="lt(int::select(heap, values, arr(i_0)), (int)x)" inst_x=x inst_iv=iv assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
-            //
-            //            rule equiv_left;
-            //                rule allLeftHide inst_t="j_0 - (begin + bucket_starts[bucket])" occ=0;
-            //                tryclose branch steps=2000;
-            //
-            //            witness "\forall int iv; (__ -> lt(int::select(heap, values, arr(i_0)), (int)(any::seqGet(seqDef{int j;}(add(begin, int::select(heap, bucket_starts, arr(bucket))), add(begin, int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))), int::select(heap, values, arr(j))), iv))))" as="iv_0";
-            //
-            //
-            //            rule impLeft occ=0;
-            //                tryclose branch steps=600;
-            //
-            //            rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
-            //
-            //            tryclose branch steps=2000;
-
-                    branches "select" child=0;
-                    branches "pop";
+                branches "select" branch="show";
 
                     cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0)) = int::select(heap, values, arr(i_0))";
-                    branches "select" child=1;
+                    branches "push";
+                    branches "select" branch="show";
                         set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
                         set key="DEP_OPTIONS_KEY" value="DEP_OFF";
                         set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                         set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                         tryclose branch steps=2000;
-                    branches "select" child=0;
+                    branches "select" branch="use";
+                    branches "pop";
+
+                    rule impLeft occ=1;
+                        tryclose branch steps=200;
+
+                    cut "b_0 > bucket";
+                    branches "push";
+                    branches "select" branch="use";        // branches swapped!!!
+
+                        cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0)) = int::select(heap, values, arr(j_0))";
+                        branches "push";
+                        branches "select" branch="show";
+                            macro "simp-heap";
+                            set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                            set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                            set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                            set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                            tryclose branch steps=500;
+                        branches "select" branch="use";
+                        branches "pop";
+
+
+                        rule allLeftHide inst_t="i_0";
+                        rule impLeft on="__ -> (\forall int j; __)";
+                            tryclose branch steps=1000;
+                        rule allLeftHide inst_t="j_0";
+                        tryclose branch steps=1000;
+
+                    branches "select" branch="show";        // branches swapped!!!
                     branches "pop";
 
                     rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0))" occ=1;
 
-                    rule implLeft occ=0;
+                    rule allLeft inst_t="i_0";
+                    rule impLeft on="__ -> (\forall int j; __)";
+                            tryclose branch steps=1000;
 
-                    rule allLeftHide inst_t="i_0";
+                    rule allLeftHide on="(\forall int j; __)" inst_t="j_0" occ=0;
                     rule impLeft occ=0;
-                        tryclose branch steps=1000;
-                    rule allLeftHide inst_t="j_0";
+                            tryclose branch steps=1000;
 
-                branches "select" child=0;
+                    cut "begin + bucket_starts[bucket] <= j_0 & j_0 < begin + bucket_starts[bucket + 1]";
+                    branches "push";
+                    branches "select" branch="show";
+                        set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
+                        set key="DEP_OPTIONS_KEY" value="DEP_OFF";
+                        set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
+                        set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
+                        tryclose branch steps=10000;
+                    branches "select" branch="use";
+                    branches "pop";
+
+                    leave;
+//            // TODO: Showstopper! parameters that are variables do not work. I was not able to fix it ... When seqPermForall is applied manually, the rest of the script closes the branch.
+//            rule seqPermForall inst_phi="lt(int::select(heap, values, arr(i_0)), (int)x)" inst_x=x inst_iv=iv assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
+
+//                     rule equiv_left;
+//                         rule allLeftHide inst_t="j_0 - (begin + bucket_starts[bucket])" occ=0;
+//                         tryclose branch steps=2000;
+//
+//                     witness "\forall int iv; (__ -> lt(int::select(heap, values, arr(i_0)), (int)(any::seqGet(seqDef{int j;}(add(begin, int::select(heap, bucket_starts, arr(bucket))), add(begin, int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))), int::select(heap, values, arr(j))), iv))))" as="iv_0";
+//
+//
+//                     rule allLeftHide inst_t="i_0";
+//                     rule impLeft on="__ -> (\forall int j; __)";
+//                         tryclose branch steps=600;
+//
+//                     rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
+//
+//                     tryclose branch steps=2000;
+
+                branches "select" branch="use";
                 branches "pop";
 
+                // TODO: works from here!
                 // TODO: seems that abbreviations do not work in cuts ...
                 // let @vjAtLargerHeap="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))";
 
                 cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0)) = int::select(heap, values, arr(j_0))";
                 branches "push";
-                branches "select" child=1;
+                branches "select" branch="show";
                     set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
                     set key="DEP_OPTIONS_KEY" value="DEP_OFF";
                     set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                     set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                     tryclose branch steps=400;
-                branches "select" child=0;
+                branches "select" branch="use";
                 branches "pop";
 
                 rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))" occ=1;
+
+                leave;
 
            //     // TODO: Showstopper! parameters that are variables do not work. I was not able to fix it ...
            //     rule seqPermForall inst_phi="lt((int)x, int::select(heap, values, arr(j_0)))" inst_x=x inst_iv=iv assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
