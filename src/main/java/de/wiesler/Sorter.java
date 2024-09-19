@@ -491,34 +491,18 @@ public final class Sorter {
                 branches "select" branch="use";
                 branches "pop";
 
-                //assert "b_0 != bucket" \by {
-                    //auto steps=200 dependencies=false classAxioms=false modelSearch=false expandQueries=false;
-
-                //    // workaround: this also affects all branches visited afterwards!
-                //    set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
-                //    set key="DEP_OPTIONS_KEY" value="DEP_ON";
-                //    set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
-                //    set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
-                //    tryclose branch steps=200;
-                //}
-
                 expand on="de.wiesler.Sorter::allBucketsInRangeSorted(Heap::_, values, begin, end, bucket_starts, num_buckets, 0, bucket)";
+                oss;
 
-                // TODO: instantiate command does not support holes/ellipses at the moment
-                rule allLeftHide inst_formula="\forall int b; (b < num_buckets & b >= 0 & b != bucket -> __)" inst_t="b_0";
+                rule allLeftHide inst_t="b_0" occ=0;
+                rule allLeftHide inst_t="b_0" occ=0;
 
-                // TODO: in the GUI this works with the setting classAxioms:Delayed, which can not be selected in the script currently
-                //auto steps=7000 dependencies=true classAxioms=true modelSearch=false expandQueries=false;
-                //leave;
-
-                // workaround: this also affects all branches visited afterwards!
                 set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
                 set key="DEP_OPTIONS_KEY" value="DEP_ON";
                 set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
-                set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
-                tryclose branch steps=7000;
+                set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_ON";
+                tryclose branch steps=3000;
 
-                // TODO: for some strange reason, this branch does not close directly, only when the script is applied manually in GUI ...
             }; */
         /*@ assert ssortRec_post2: Sorter.allBucketsPartitioned(values, begin, end, bucket_starts, num_buckets) \by {
                 oss;
@@ -613,29 +597,27 @@ public final class Sorter {
                     branches "select" branch="use";
                     branches "pop";
 
-                    leave;
-//            // TODO: Showstopper! parameters that are variables do not work. I was not able to fix it ... When seqPermForall is applied manually, the rest of the script closes the branch.
-//            rule seqPermForall inst_phi="lt(int::select(heap, values, arr(i_0)), (int)x)" inst_x=x inst_iv=iv assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
+                    // TODO: for the schemaVariable x, it is necessary to state the exact next (!) name that is free!!!
+                    rule seqPermForall inst_phi="lt(int::select(heap, values, arr(i_0)), (int)x_6)" assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
 
-//                     rule equiv_left;
-//                         rule allLeftHide inst_t="j_0 - (begin + bucket_starts[bucket])" occ=0;
-//                         tryclose branch steps=2000;
-//
-//                     witness "\forall int iv; (__ -> lt(int::select(heap, values, arr(i_0)), (int)(any::seqGet(seqDef{int j;}(add(begin, int::select(heap, bucket_starts, arr(bucket))), add(begin, int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))), int::select(heap, values, arr(j))), iv))))" as="iv_0";
-//
-//
-//                     rule allLeftHide inst_t="i_0";
-//                     rule impLeft on="__ -> (\forall int j; __)";
-//                         tryclose branch steps=600;
-//
-//                     rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
-//
-//                     tryclose branch steps=2000;
+                     rule equiv_left;
+                         rule allLeftHide inst_t="j_0 - (begin + bucket_starts[bucket])" occ=0;
+                         tryclose branch steps=2000;
+
+                     witness "\forall int iv; (__ -> lt(int::select(heap, values, arr(i_0)), (int)(any::seqGet(seqDef{int j;}(add(begin, int::select(heap, bucket_starts, arr(bucket))), add(begin, int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))), int::select(heap, values, arr(j))), iv))))" as="iv_0";
+
+
+                     rule allLeftHide inst_t="i_0";
+                     rule impLeft on="__ -> (\forall int j; __)";
+                         tryclose branch steps=600;
+
+                     rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
+
+                     tryclose branch steps=2000;
 
                 branches "select" branch="use";
                 branches "pop";
 
-                // TODO: works from here!
                 // TODO: seems that abbreviations do not work in cuts ...
                 // let @vjAtLargerHeap="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))";
 
@@ -652,20 +634,18 @@ public final class Sorter {
 
                 rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))" occ=1;
 
-                leave;
+                // TODO: for the schemaVariable x, it is necessary to state the exact next (!) name that is free!!!
+                rule seqPermForall inst_phi="lt((int)x_6, int::select(heap, values, arr(j_0)))" assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
 
-           //     // TODO: Showstopper! parameters that are variables do not work. I was not able to fix it ...
-           //     rule seqPermForall inst_phi="lt((int)x, int::select(heap, values, arr(j_0)))" inst_x=x inst_iv=iv assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
-           //
-           //     rule equiv_left;
-           //         rule allLeftHide inst_t="i_0 - (begin + bucket_starts[bucket])" occ=0;
-           //         tryclose branch steps=2000;
-           //
-           //     rule allRight occ=1;
-           //     rule impLeft occ=1;
-           //         tryclose branch steps=50;
-           //     rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
-           //     tryclose branch steps=6000;
+                rule equiv_left;
+                    rule allLeftHide inst_t="i_0 - (begin + bucket_starts[bucket])" occ=0;
+                    tryclose branch steps=2000;
+
+                rule allRight occ=1;
+                rule impLeft occ=1;
+                    tryclose branch steps=50;
+                rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
+                tryclose branch steps=6000;
             }; */
         /*@ assert ssortRec_post3: Sorter.smallBucketsInRangeSorted(values, begin, end, bucket_starts, num_buckets, bucket + 1, num_buckets) \by {
                 oss;
