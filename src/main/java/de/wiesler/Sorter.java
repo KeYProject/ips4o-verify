@@ -480,16 +480,13 @@ public final class Sorter {
                 macro "simp-int";
                 witness "\forall int b; (0 <= b & b <= bucket -> de.wiesler.Functions::isSortedSlice(Heap::_, int[]::_, int::_, int::_) = TRUE)" as="b_0";
 
-                cut "b_0 != bucket";
-                branches "push";
-                branches "select" branch="show";
+                assert "b_0 != bucket" \by {
                     set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_DELAYED";
                     set key="DEP_OPTIONS_KEY" value="DEP_ON";
                     set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                     set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                     tryclose branch steps=200;
-                branches "select" branch="use";
-                branches "pop";
+                }
 
                 expand on="de.wiesler.Sorter::allBucketsInRangeSorted(Heap::_, values, begin, end, bucket_starts, num_buckets, 0, bucket)";
                 oss;
@@ -516,12 +513,9 @@ public final class Sorter {
                 expand on="de.wiesler.Sorter::isBucketPartitioned(heap, values, begin, end, int::_, int::_)";
                 expand on="de.wiesler.Sorter::isBucketPartitioned(Heap::_, values, begin, end, int::_, int::_)";
 
-                cut "0 <= b_0 & b_0 < num_buckets";
-                branches "push";
-                branches "select" branch="show";
+                assert "0 <= b_0 & b_0 < num_buckets" \by {
                     tryclose branch steps=1000;
-                branches "select" branch="use";
-                branches "pop";
+                }
 
                 macro "nosplit-prop";
                 macro "simp-int";
@@ -532,105 +526,83 @@ public final class Sorter {
                 rule allRight;
                 rule allLeftHide on="\forall int b; __" inst_t="b_0";
 
-                cut "b_0 = bucket";
-                branches "push";
-                branches "select" branch="show";
+                assert "b_0 = bucket" \by {
 
-                    cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0)) = int::select(heap, values, arr(i_0))";
-                    branches "push";
-                    branches "select" branch="show";
+                    assert "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0)) = int::select(heap, values, arr(i_0))" \by {
                         set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
                         set key="DEP_OPTIONS_KEY" value="DEP_OFF";
                         set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                         set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                         tryclose branch steps=2000;
-                    branches "select" branch="use";
-                    branches "pop";
+                    }
 
                     rule impLeft occ=1;
                         tryclose branch steps=200;
 
-                    cut "b_0 > bucket";
-                    branches "push";
-                    branches "select" branch="use";        // branches swapped!!!
+                    assert "b_0 > bucket" \by {
+                        rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0))" occ=1;
 
-                        cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0)) = int::select(heap, values, arr(j_0))";
-                        branches "push";
-                        branches "select" branch="show";
-                            macro "simp-heap";
+                        rule allLeft inst_t="i_0";
+                        rule impLeft on="__ -> (\forall int j; __)";
+                                tryclose branch steps=1000;
+
+                        rule allLeftHide on="(\forall int j; __)" inst_t="j_0" occ=0;
+                        rule impLeft occ=0;
+                                tryclose branch steps=1000;
+
+                        assert "begin + bucket_starts[bucket] <= j_0 & j_0 < begin + bucket_starts[bucket + 1]" \by {
                             set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
                             set key="DEP_OPTIONS_KEY" value="DEP_OFF";
                             set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                             set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
-                            tryclose branch steps=500;
-                        branches "select" branch="use";
-                        branches "pop";
+                            tryclose branch steps=10000;
+                        }
+
+                        // TODO: for the schemaVariable x, it is necessary to state the exact next (!) name that is free!!!
+                        rule seqPermForall inst_phi="lt(int::select(heap, values, arr(i_0)), (int)x_6)" assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
+
+                        rule equiv_left;
+                            rule allLeftHide inst_t="j_0 - (begin + bucket_starts[bucket])" occ=0;
+                            tryclose branch steps=2000;
+
+                        witness "\forall int iv; (__ -> lt(int::select(heap, values, arr(i_0)), (int)(any::seqGet(seqDef{int j;}(add(begin, int::select(heap, bucket_starts, arr(bucket))), add(begin, int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))), int::select(heap, values, arr(j))), iv))))" as="iv_0";
 
 
                         rule allLeftHide inst_t="i_0";
                         rule impLeft on="__ -> (\forall int j; __)";
-                            tryclose branch steps=1000;
-                        rule allLeftHide inst_t="j_0";
-                        tryclose branch steps=1000;
+                            tryclose branch steps=600;
 
-                    branches "select" branch="show";        // branches swapped!!!
-                    branches "pop";
+                        rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
 
-                    rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap<<anonHeapFunction>>), values, arr(i_0))" occ=1;
+                        tryclose branch steps=2000;
+                    }
 
-                    rule allLeft inst_t="i_0";
-                    rule impLeft on="__ -> (\forall int j; __)";
-                            tryclose branch steps=1000;
-
-                    rule allLeftHide on="(\forall int j; __)" inst_t="j_0" occ=0;
-                    rule impLeft occ=0;
-                            tryclose branch steps=1000;
-
-                    cut "begin + bucket_starts[bucket] <= j_0 & j_0 < begin + bucket_starts[bucket + 1]";
-                    branches "push";
-                    branches "select" branch="show";
+                    assert "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0)) = int::select(heap, values, arr(j_0))" \by {
+                        macro "simp-heap";
                         set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
                         set key="DEP_OPTIONS_KEY" value="DEP_OFF";
                         set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                         set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
-                        tryclose branch steps=10000;
-                    branches "select" branch="use";
-                    branches "pop";
+                        tryclose branch steps=500;
+                    }
 
-                    // TODO: for the schemaVariable x, it is necessary to state the exact next (!) name that is free!!!
-                    rule seqPermForall inst_phi="lt(int::select(heap, values, arr(i_0)), (int)x_6)" assumes="seqPerm(seqDef{int j;}(begin + bucket_starts[bucket], int::_, any::_), Seq::_)==>";
-
-                     rule equiv_left;
-                         rule allLeftHide inst_t="j_0 - (begin + bucket_starts[bucket])" occ=0;
-                         tryclose branch steps=2000;
-
-                     witness "\forall int iv; (__ -> lt(int::select(heap, values, arr(i_0)), (int)(any::seqGet(seqDef{int j;}(add(begin, int::select(heap, bucket_starts, arr(bucket))), add(begin, int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))), int::select(heap, values, arr(j))), iv))))" as="iv_0";
-
-
-                     rule allLeftHide inst_t="i_0";
-                     rule impLeft on="__ -> (\forall int j; __)";
-                         tryclose branch steps=600;
-
-                     rule allLeftHide inst_t="iv_0 + begin + bucket_starts[bucket]";
-
-                     tryclose branch steps=2000;
-
-                branches "select" branch="use";
-                branches "pop";
+                    rule allLeftHide inst_t="i_0";
+                    rule impLeft on="__ -> (\forall int j; __)";
+                        tryclose branch steps=1000;
+                    rule allLeftHide inst_t="j_0";
+                    tryclose branch steps=1000;
+                }
 
                 // TODO: seems that abbreviations do not work in cuts ...
                 // let @vjAtLargerHeap="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))";
 
-                cut "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0)) = int::select(heap, values, arr(j_0))";
-                branches "push";
-                branches "select" branch="show";
+                assert "int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0)) = int::select(heap, values, arr(j_0))" \by {
                     set key="CLASS_AXIOM_OPTIONS_KEY" value="CLASS_AXIOM_OFF";
                     set key="DEP_OPTIONS_KEY" value="DEP_OFF";
                     set key="NON_LIN_ARITH_OPTIONS_KEY" value="NON_LIN_ARITH_DEF_OPS";
                     set key="QUERYAXIOM_OPTIONS_KEY" value="QUERYAXIOM_OFF";
                     tryclose branch steps=400;
-                branches "select" branch="use";
-                branches "pop";
+                }
 
                 rule applyEq on="int::select(anon(heap, union(LocSet::final(storage, de.wiesler.Storage::$allArrays), arrayRange(values, add(begin, int::select(heap, bucket_starts, arr(bucket))), add(add(Z(neglit(1(#))), begin), int::select(heap, bucket_starts, arr(add(Z(1(#)), bucket)))))), anonOut_heap), values, arr(j_0))" occ=1;
 
@@ -886,8 +858,7 @@ public final class Sorter {
                 // TODO: there seems to be a bug in interplay of loop scopes and script ("program variable h not known") -> make sure to use loop transformation rule here!
                 /*@ assert insSort1: \dl_seqPerm(seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value), \old(\dl_seq_def_workaround(begin, end, values))) \by {
                         leave;
-                    }
-                  @*/
+                    } @*/
                 /* @ assert insSort1: \dl_seqPerm(seqUpd(\dl_seq_def_workaround(begin, end, values), hole - begin, value), \old(\dl_seq_def_workaround(begin, end, values))) \by {
 
                     oss;
